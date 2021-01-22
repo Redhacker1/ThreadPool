@@ -11,7 +11,7 @@ namespace ThreadPoolTest
         {
             ThreadPoolClass<object> ThreadPool = new ThreadPoolClass<object>();
             List<int> GetReturns = new List<int>(); 
-            ThreadPool.InitializePool(12);
+            ThreadPool.InitializePool(0);
             int TestAmount = short.MaxValue;
             Console.WriteLine("{0}, Total Threads", ThreadPool.Threads);
 
