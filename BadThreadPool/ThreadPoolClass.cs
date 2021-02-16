@@ -108,17 +108,31 @@ namespace ThreadingLearning
         /// </summary>
         /// <param name="Method"> Method you want to call, format in lambda AKA like: () => {method in question} </param>
         /// <returns>Returns ID so that it can be referenced later assuming you need a specific ID or that order of information is important, otherwise safe to ignore</returns>
-        public int AddRequest(Action Method)
+        public int AddRequest(Func<T> Method, object instance = null)
         {
+            bool bRelightThreadPool = false;
+            if (TasksRemaining.Count == 0)
+            {
+                bRelightThreadPool = true;
+            }
+
+            if(instance == null)
+            {
+                instance = Activator.CreateInstance(Method.Method.DeclaringType);
+            }
+
             lock (TaskListLock)
             {
-                ThreadTaskRequest<T> TaskClass = new ThreadTaskRequest<T>( Method.Method, this);
+                ThreadTaskRequest<T> TaskClass = new ThreadTaskRequest<T>( Method, this ,instance);
                 TasksRemaining.Insert(0, TaskClass);
-                if (TasksRemaining.Count == 0)
+                if (bRelightThreadPool)
                 {
                     foreach (PooledThreadClass<T> threadClass in pooledThreadClasses)
                     {
-                        threadClass.ReigniteThread();
+                        if(threadClass.bIsIdle)
+                        {
+                            threadClass.ReigniteThread();
+                        }
                     }
                 }   
                 return TaskClass.ID;
@@ -165,7 +179,7 @@ namespace ThreadingLearning
         {
             foreach (PooledThreadClass<T> Thread in pooledThreadClasses)
             {
-                if (Thread.bIsIdle == false)
+                if (Thread.bIsIdle == false && TasksRemaining.Count != 0)
                 {
                     return false;
                 }

@@ -10,9 +10,10 @@ namespace ThreadingLearning
         static readonly Random RNG = new Random();
         readonly ThreadPoolClass<T> threadPool;
 
-        public ThreadTaskRequest(MethodInfo method, ThreadPoolClass<T> Threadpool)
+
+        public ThreadTaskRequest(Func<T> method, ThreadPoolClass<T> Threadpool, object instance_to_run_on)
         {
-            Method = new object[2] { Activator.CreateInstance(method.ReflectedType), method };
+            Method = method;
 
             threadPool = Threadpool;
             RandomUniqueThreadID();
@@ -33,7 +34,7 @@ namespace ThreadingLearning
         /// <summary>
         /// Method the thread is supposed to call when created
         /// </summary>
-        public object[] Method { get; }
+        public Func<T> Method { get; }
         //ID the thread uses
         private int id;
         /// <summary>

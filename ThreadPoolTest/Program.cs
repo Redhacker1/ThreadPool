@@ -2,6 +2,8 @@
 using System.Diagnostics;
 using System.Collections.Generic;
 using ThreadingLearning;
+using System.Threading;
+using System.Runtime.InteropServices;
 
 namespace ThreadPoolTest
 {
@@ -9,17 +11,18 @@ namespace ThreadPoolTest
     {
         static void Main(string[] args)
         {
-            ThreadPoolClass<object> ThreadPool = new ThreadPoolClass<object>();
-            List<int> GetReturns = new List<int>(); 
-            ThreadPool.InitializePool(0);
             int TestAmount = short.MaxValue;
-            Console.WriteLine("{0}, Total Threads", ThreadPool.Threads);
+            List<int> GetReturns = new List<int>();
 
             Stopwatch watch = new Stopwatch();
             watch.Start();
-            for (int i = 0; i < TestAmount; i++)
+            ThreadPoolClass<double> ThreadPool = new ThreadPoolClass<double>();
+            ThreadPool.InitializePool(8);
+            double percent_old = 0;
+
+            for (uint i = 0; i < TestAmount; i++)
             {
-                GetReturns.Add(ThreadPool.AddRequest(() => TestThreading_old(1)));
+                GetReturns.Add(ThreadPool.AddRequest(() => TestThreading_old()));
             }
 
             ThreadPool.IgniteThreadPool();
@@ -27,22 +30,20 @@ namespace ThreadPoolTest
             // Spinlock while we wait for threads to finish (complain all you want about this)
             while (!ThreadPool.AllThreadsIdle())
             {
-
             };
             watch.Stop();
-
             Console.WriteLine("Completed, Time in seconds {0}", watch.ElapsedMilliseconds* 0.001);
 
-            watch.Start();
-            for (int i = 0; i < TestAmount; i++)
+            watch.Restart();
+            for (uint i = 0; i < TestAmount; i++)
             {
-                GetReturns.Add(ThreadPool.AddRequest(() => TestThreading()));
+                GetReturns.Add(ThreadPool.AddRequest(() => TestThreading_old(true), new Program()));
             }
 
             while (!ThreadPool.AllThreadsIdle())
             {
 
-            };
+            }
             watch.Stop();
             Console.WriteLine("Completed, Time in seconds {0}", watch.ElapsedMilliseconds * 0.001);
 
@@ -50,19 +51,16 @@ namespace ThreadPoolTest
             ThreadPool.ShutDownHandler();
         }
 
-        static string TestThreading()
-        {
-            return "hello" + "World";
-        }
+       
 
         /// <summary>
         /// Calculates pi, just for testing
         /// </summary>
         /// <returns>pi</returns>
-        static double TestThreading_old(int Arg1)
+        static double TestThreading_old(bool printRunning = false)
         {
             double pi = 0;
-            for (int k = 0; k <= ushort.MaxValue; k++)
+            for (int k = 0; k <= short.MaxValue; k++)
             {
                 double delta = ((Math.Pow((-1), k)) / (Math.Pow(2, (10 * k)))) *
                     (-(Math.Pow(2, 5) / ((4 * k) + 1))

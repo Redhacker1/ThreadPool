@@ -16,7 +16,7 @@ namespace ThreadingLearning
         /// </summary>
         private T Result = default;
 
-        private static EventWaitHandle ewh = new EventWaitHandle(false, EventResetMode.ManualReset);
+        private EventWaitHandle ewh = new EventWaitHandle(false, EventResetMode.ManualReset);
 
         /// <summary>
         /// Indicates if the thread has "work" to do
@@ -68,14 +68,14 @@ namespace ThreadingLearning
         public void PrepareThread()
         {
             bIsAlive = true;
-            var InternalThread = new Thread(ThreadLoop);
+            InternalThread = new Thread(ThreadLoop);
             InternalThread.Start();
         }
 
         public void ReigniteThread()
         {
-            ewh.Set();
             bIsIdle = false;
+            ewh.Set();
         }
 
         //WHY DID YOU DO THIS? JUST MAKE Result PUBLIC DUMBASS -Author of code (Donovan)
@@ -91,19 +91,27 @@ namespace ThreadingLearning
         /// 
         public void ThreadLoop()
         {
+            ThreadTaskRequest<T> Current_Task;
             bIsAlive = true;
             while(ThreadPool.bIsRunning)
             {
-                if(ThreadPool.TasksRemaining.Count != 0)
-                {
-                    ThreadTaskRequest<T> Current_Task;
+                Current_Task = null;
 
-                    lock (ThreadPool.TaskListLock)
+                lock (ThreadPool.TaskListLock)
+                {
+                    if (ThreadPool.TasksRemaining.Count > 0)
                     {
                         Current_Task = ThreadPool.TasksRemaining[ThreadPool.TasksRemaining.Count - 1];
                         ThreadPool.TasksRemaining.RemoveAt(ThreadPool.TasksRemaining.Count - 1);
                     }
-                    Result = (T)((MethodInfo)Current_Task.Method[1]).Invoke(Current_Task.Method[0], null);
+                    else
+                    {
+                        bIsIdle = true;
+                    }
+                }
+                if (Current_Task != null)
+                {
+                    Result = Current_Task.Method();
                     lock (ThreadPool.ReturnValueLock)
                     {
                         ThreadPool.Return_Values[Current_Task.ID] = Result;
@@ -113,16 +121,11 @@ namespace ThreadingLearning
                         ThreadPool.CompletedTasks.Add(Current_Task);
                     }
                 }
-                else if(bIsPaused)
+                if (bIsIdle || bIsPaused)
                 {
-                    ewh.WaitOne();
-                }
-                else
-                {
-                    // Sets the thread to the idle state
-                    bIsIdle = true;
                     // Blocks the current thread until it is enabled
-                    ewh.WaitOne();
+                    // ewh.WaitOne();
+                    continue;
                 }
             }
             bIsAlive = false;
