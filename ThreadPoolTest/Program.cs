@@ -5,10 +5,11 @@ using BadThreadPool;
 
 namespace ThreadPoolTest
 {
-    internal static class Program
+    internal class Program
     {
         static void Main()
         {
+            PiCalculatorTest piCalc = new();
             const int testAmount = short.MaxValue;
             List<ThreadTaskRequest> getReturns = new();
 
@@ -16,14 +17,13 @@ namespace ThreadPoolTest
             watch.Start();
             ThreadPoolClass threadPool = new();
 
-            Console.WriteLine(testAmount
-                );
+            Console.WriteLine(testAmount);
             threadPool.InitializePool();
             threadPool.IgniteThreadPool();
 
             for (uint i = 0; i < testAmount; i++)
             {
-                getReturns.Add(threadPool.AddRequest(TestThreading_old));
+                getReturns.Add(threadPool.AddRequest(piCalc.Calc_Pi));
             }
 
             // Spinlock while we wait for threads to finish (complain all you want about this)
@@ -40,7 +40,7 @@ namespace ThreadPoolTest
             watch.Restart();
             for (uint i = 0; i < testAmount; i++)
             {
-                getReturns.Add(threadPool.AddRequest(TestThreading_old, Test_Threading_callback));
+                getReturns.Add(threadPool.AddRequest(piCalc.Calc_Pi, piCalc.Test_Threading_callback));
             }
 
             while (!threadPool.AllThreadsIdle())
@@ -57,8 +57,8 @@ namespace ThreadPoolTest
             watch.Reset();
             watch.Start();
             for (uint i = 0; i < testAmount; i++)
-            { 
-                TestThreading_old();
+            {
+                piCalc.Calc_Pi();
             }
             Console.WriteLine("Completed, Time in seconds {0}", watch.ElapsedMilliseconds * 0.001);
             Console.WriteLine("Single core performance was: {0}% slower", CalculatePercentDifference(watch.ElapsedMilliseconds * 0.001, mtTime));
@@ -69,34 +69,5 @@ namespace ThreadPoolTest
        {
             return (int)((a - b) / Math.Abs(b) *100);
        }
-
-        /// <summary>
-        /// Calculates pi, just for testing
-        /// </summary>
-        /// <returns>pi</returns>
-        static object TestThreading_old()
-        {
-            double pi = 0;
-            for (int k = 0; k <= short.MaxValue; k++)
-            {
-                double delta = ((Math.Pow((-1), k)) / (Math.Pow(2, (10 * k)))) *
-                               (-(Math.Pow(2, 5) / ((4 * k) + 1))
-                                - 1f / (4 * k + 3)
-                                + (Math.Pow(2, 8) / ((10 * k) + 1))
-                                - (Math.Pow(2, 6) / ((10 * k) + 3))
-                                - (Math.Pow(2, 2) / ((10 * k) + 5))
-                                - (Math.Pow(2, 2) / ((10 * k) + 7))
-                                + 1f / (k * 10 + 9));
-
-                delta /= (Math.Pow(2, 6));
-                pi += delta;
-            }
-            return pi;
-        }
-
-        static void Test_Threading_callback(CallbackArgs<object> args)
-        {
-            
-        }
     }
 }
