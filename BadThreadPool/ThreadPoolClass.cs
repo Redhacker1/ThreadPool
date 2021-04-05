@@ -62,11 +62,18 @@ namespace BadThreadPool
                 if (lowestTaskNumber > threadClass.TasksAssigned.Count)
                 {
                     lowestTaskNumber = threadClass.TasksAssigned.Count;
-                    lowestTaskThread = threadClass;
+                    lowestTaskThread = threadClass; 
                 }
             }
 
-            lowestTaskThread?.TasksAssigned.Add(taskClass);
+
+            if (lowestTaskThread?.TaskAccessLock != null)
+            {
+                lock (lowestTaskThread?.TaskAccessLock)
+                {
+                    lowestTaskThread?.TasksAssigned.Add(taskClass);
+                }   
+            }
             return taskClass;
         }
 

@@ -10,7 +10,7 @@ namespace ThreadPoolTest
         static void Main()
         {
             PiCalculatorTest piCalc = new();
-            const int testAmount = short.MaxValue;
+            const int testAmount = int.MaxValue >> 1 >> 1 >> 1 >> 1 >> 1;
             List<ThreadTaskRequest> getReturns = new();
 
             Stopwatch watch = new();
@@ -23,15 +23,15 @@ namespace ThreadPoolTest
 
             for (uint i = 0; i < testAmount; i++)
             {
-                getReturns.Add(threadPool.AddRequest(piCalc.Calc_Pi));
+                threadPool.AddRequest(piCalc.Calc_Pi);
             }
-
-            // Spinlock while we wait for threads to finish (complain all you want about this)
+            
+            
             while (!threadPool.AllThreadsIdle())
             {
-                
-            }
 
+            }
+            
             watch.Stop();
 
             double mtTime = watch.ElapsedMilliseconds * 0.001;

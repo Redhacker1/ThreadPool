@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Runtime.Serialization;
 using System.Threading;
 
 namespace BadThreadPool
@@ -15,6 +16,8 @@ namespace BadThreadPool
         public bool BIsPaused = false;
 
         public bool PendingShutdown;
+
+        public object TaskAccessLock = new object();
 
         /// <summary>
         /// Is true if the thread has no work to do and the manual reset event is triggered.
@@ -54,20 +57,24 @@ namespace BadThreadPool
             while(!PendingShutdown)
             {
                 ThreadTaskRequest currentTask = null;
-                if (TasksAssigned.Count > 0 && !BIsPaused)
+                lock (TaskAccessLock)
                 {
-                    if (BIsIdle)
+                    if (TasksAssigned.Count > 0 && !BIsPaused)
                     {
-                        BIsIdle = false;
+                        if (BIsIdle)
+                        {
+                            BIsIdle = false;
+                        }
+
+                        currentTask = TasksAssigned[0];
+                        TasksAssigned.RemoveAt(0);  
                     }
-                    currentTask = TasksAssigned[0];
-                    TasksAssigned.RemoveAt(0);
-                }
-                else
-                {
-                    if (!BIsIdle)
+                    else
                     {
-                        BIsIdle = true;
+                        if (!BIsIdle)
+                        {
+                            BIsIdle = true;
+                        }
                     }
                 }
 
